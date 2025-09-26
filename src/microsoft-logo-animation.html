@@ -91,7 +91,7 @@
 
         /* Reunify animation - smooth transition back */
         .reunify .logo-piece {
-            transition: all 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             transform: translate(0, 0) rotate(0deg) scale(1);
             opacity: 1;
         }
@@ -99,22 +99,22 @@
         /* Enhanced reunify with staggered timing for each piece */
         .reunify .piece-1 {
             transition-delay: 0s;
-            animation: reunifyBounce 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            animation: reunifyBounce 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .reunify .piece-2 {
-            transition-delay: 0.05s;
-            animation: reunifyBounce 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s;
+            transition-delay: 0.02s;
+            animation: reunifyBounce 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.02s;
         }
 
         .reunify .piece-3 {
-            transition-delay: 0.1s;
-            animation: reunifyBounce 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s;
+            transition-delay: 0.04s;
+            animation: reunifyBounce 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.04s;
         }
 
         .reunify .piece-4 {
-            transition-delay: 0.15s;
-            animation: reunifyBounce 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s;
+            transition-delay: 0.06s;
+            animation: reunifyBounce 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.06s;
         }
 
         @keyframes reunifyBounce {
@@ -198,7 +198,7 @@
         }
 
         .particle.animate {
-            animation: particleFloat 1s ease-out;
+            animation: particleFloat 0.5s ease-out;
         }
 
         @keyframes particleFloat {
@@ -265,7 +265,7 @@
         </div>
         
         <button class="animate-button" id="animateBtn" onclick="animateLogo()">
-            Split & Reunify
+            Go!
         </button>
     </div>
 
@@ -282,7 +282,7 @@
             
             // Disable button during animation
             button.disabled = true;
-            button.textContent = 'Splitting...';
+            button.textContent = 'Wait...';
             
             // Store the split transforms as CSS variables for the reunify animation
             pieces[0].style.setProperty('--split-transform', 'translate(-150px, -150px) rotate(360deg) scale(0.8)');
@@ -298,21 +298,23 @@
             
             // After 1 second, start reunification
             setTimeout(() => {
-                button.textContent = 'Reunifying...';
+                button.textContent = 'Wait...';
                 logo.classList.remove('split');
                 logo.classList.add('reunify');
-                
+                                
                 // Create reunification particle effect
-                setTimeout(() => createParticles(), 200);
-                
-                // Remove reunify class after animation completes (1.15s total for staggered animation)
+                setTimeout(() => createParticles(), 200);              
+
+                button.disabled = false;
+                button.textContent = 'Go!';
+                   
+                // Remove reunify class after animation completes (0.56s total for staggered animation)
                 setTimeout(() => {
                     logo.classList.remove('reunify');
                     isAnimating = false;
-                    button.disabled = false;
-                    button.textContent = 'Split & Reunify';
-                }, 1150);
-            }, 1000);
+                    
+                }, 560);
+            }, 400);
         }
 
         function createParticles() {
