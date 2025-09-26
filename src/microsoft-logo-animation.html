@@ -186,6 +186,81 @@
             font-weight: 300;
         }
 
+        .motion-log {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            max-height: 200px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            color: #f1f1f1;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            font-size: 13px;
+            line-height: 1.4;
+            display: none;
+            z-index: 1200;
+        }
+
+        .motion-log.active {
+            display: block;
+        }
+
+        .motion-log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        .motion-log-content {
+            max-height: 140px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .motion-log-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .motion-log-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .motion-log-entry {
+            margin-bottom: 6px;
+            opacity: 0.9;
+        }
+
+        .motion-log-controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 6px;
+            gap: 8px;
+        }
+
+        .motion-log-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #f1f1f1;
+            font-size: 11px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .motion-log-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         /* Particle effect for extra visual appeal */
         .particle {
             position: absolute;
@@ -264,57 +339,119 @@
             </div>
         </div>
         
-        <button class="animate-button" id="animateBtn" onclick="animateLogo()">
-            Go!
+        <button class="animate-button" id="animateBtn" onclick="animateLogo('button')">
+            Split & Reunify
         </button>
     </div>
+
+        <div class="motion-log" id="motionLog" aria-live="polite" aria-label="Motion sensor log">
+            <div class="motion-log-header">
+                <span>Motion Logs</span>
+                <span id="motionLogStatus">waiting…</span>
+            </div>
+            <div class="motion-log-content" id="motionLogContent"></div>
+            <div class="motion-log-controls">
+                <button class="motion-log-button" id="motionLogToggle">Hide</button>
+                <button class="motion-log-button" id="motionLogClear">Clear</button>
+            </div>
+        </div>
 
     <script>
         let isAnimating = false;
 
-        function animateLogo() {
-            if (isAnimating) return;
-            
+        const motionLog = document.getElementById('motionLog');
+        const motionLogContent = document.getElementById('motionLogContent');
+        const motionLogStatus = document.getElementById('motionLogStatus');
+        const motionLogToggle = document.getElementById('motionLogToggle');
+        const motionLogClear = document.getElementById('motionLogClear');
+    const logEntries = [];
+    let motionSampleCount = 0;
+        const LOG_LIMIT = 30;
+
+        function logStatus(message, { highlight = false } = {}) {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'motion-log-entry';
+            entry.textContent = `[${timestamp}] ${message}`;
+            if (highlight) {
+                entry.style.color = '#ffd166';
+            }
+
+            logEntries.push(entry);
+            while (logEntries.length > LOG_LIMIT) {
+                const removed = logEntries.shift();
+                if (removed.parentNode) {
+                    removed.parentNode.removeChild(removed);
+                }
+            }
+
+            motionLogContent.appendChild(entry);
+            motionLogContent.scrollTop = motionLogContent.scrollHeight;
+
+            if (!motionLog.classList.contains('active')) {
+                motionLog.classList.add('active');
+                motionLogToggle.textContent = 'Hide';
+            }
+
+            motionLogStatus.textContent = highlight ? 'event' : 'listening…';
+        }
+
+        motionLogToggle.addEventListener('click', () => {
+            const isActive = motionLog.classList.toggle('active');
+            motionLogToggle.textContent = isActive ? 'Hide' : 'Show';
+        });
+
+        motionLogClear.addEventListener('click', () => {
+            motionLogContent.innerHTML = '';
+            logEntries.length = 0;
+            motionLogStatus.textContent = 'cleared';
+        });
+
+        if (!window.isSecureContext) {
+            logStatus('⚠️ Motion sensors require a secure origin (https or localhost). file:// pages are blocked in Chrome.', { highlight: true });
+        } else {
+            logStatus('Motion logger ready. Waiting for sensor events.');
+        }
+
+        function animateLogo(source = 'manual') {
+            if (isAnimating) {
+                logStatus(`Animation request via ${source} ignored (already running).`);
+                return;
+            }
+
             isAnimating = true;
             const logo = document.getElementById('microsoftLogo');
             const button = document.getElementById('animateBtn');
             const pieces = document.querySelectorAll('.logo-piece');
-            
-            // Disable button during animation
+
+            logStatus(`Animation triggered via ${source}.`, { highlight: source === 'shake' });
+
             button.disabled = true;
-            button.textContent = 'Wait...';
-            
-            // Store the split transforms as CSS variables for the reunify animation
+            button.textContent = 'Splitting...';
+
             pieces[0].style.setProperty('--split-transform', 'translate(-150px, -150px) rotate(360deg) scale(0.8)');
             pieces[1].style.setProperty('--split-transform', 'translate(150px, -150px) rotate(-360deg) scale(0.8)');
             pieces[2].style.setProperty('--split-transform', 'translate(-150px, 150px) rotate(-360deg) scale(0.8)');
             pieces[3].style.setProperty('--split-transform', 'translate(150px, 150px) rotate(360deg) scale(0.8)');
-            
-            // Create particle effect
+
             createParticles();
-            
-            // Add split class
             logo.classList.add('split');
-            
-            // After 1 second, start reunification
+
             setTimeout(() => {
-                button.textContent = 'Wait...';
+                button.textContent = 'Reunifying...';
                 logo.classList.remove('split');
                 logo.classList.add('reunify');
-                                
-                // Create reunification particle effect
-                setTimeout(() => createParticles(), 200);              
 
-                button.disabled = false;
-                button.textContent = 'Go!';
-                   
-                // Remove reunify class after animation completes (0.56s total for staggered animation)
+                setTimeout(() => createParticles(), 100);
+
                 setTimeout(() => {
                     logo.classList.remove('reunify');
                     isAnimating = false;
-                    
+                    button.disabled = false;
+                    button.textContent = 'Split & Reunify';
+                    logStatus('Animation complete.');
                 }, 560);
-            }, 400);
+            }, 500);
         }
 
         function createParticles() {
@@ -357,7 +494,7 @@
         document.addEventListener('keydown', function(event) {
             if (event.code === 'Space' || event.code === 'Enter') {
                 event.preventDefault();
-                animateLogo();
+                animateLogo('keyboard');
             }
         });
 
@@ -408,6 +545,10 @@
             if (!acceleration) return;
 
             deviceMotionEventTriggered = true;
+            motionSampleCount += 1;
+            if (motionSampleCount <= 3) {
+                logStatus(`Motion sample #${motionSampleCount}: x=${(acceleration.x ?? 0).toFixed(2)}, y=${(acceleration.y ?? 0).toFixed(2)}, z=${(acceleration.z ?? 0).toFixed(2)}`);
+            }
 
             const currentTime = Date.now();
             if (currentTime - lastShakeTime < SHAKE_TIMEOUT) return;
@@ -430,10 +571,13 @@
             const threshold = /Chrome.*Android/i.test(navigator.userAgent) ? ANDROID_THRESHOLD : SHAKE_THRESHOLD;
             const combinedDelta = Math.max(deltaVector, magnitudeDelta);
 
+            logStatus(`Δ=${combinedDelta.toFixed(2)} (vec=${deltaVector.toFixed(2)}, mag=${magnitudeDelta.toFixed(2)}) threshold=${threshold}`);
+
             if (combinedDelta > threshold) {
                 lastShakeTime = currentTime;
-                animateLogo();
-                
+                logStatus('Shake detected! Triggering animation.', { highlight: true });
+                animateLogo('shake');
+
                 if (navigator.vibrate) {
                     navigator.vibrate(100);
                 }
@@ -446,7 +590,21 @@
         // Request permission and enable shake detection on mobile devices
         function enableShakeDetection() {
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (!isMobile || deviceMotionListenerAdded) return;
+            if (!isMobile) {
+                logStatus('Shake detection skipped: not a mobile device.');
+                return;
+            }
+
+            if (deviceMotionListenerAdded) {
+                logStatus('Shake detection already enabled.');
+                return;
+            }
+
+            logStatus('Attempting to enable shake detection...');
+
+            if (!window.isSecureContext) {
+                logStatus('Chrome blocks motion sensors when opened via file://. Please serve this page via https:// or localhost for full access.', { highlight: true });
+            }
 
             const attachListener = () => {
                 if (deviceMotionListenerAdded) return;
@@ -458,6 +616,7 @@
                 // Show hint after the first actual event fires
                 const notifyOnMotion = () => {
                     deviceMotionEventTriggered = true;
+                    logStatus('Device motion event received. Shake detection active!', { highlight: true });
                     showShakeHint();
                     window.removeEventListener('devicemotion', notifyOnMotion);
                 };
@@ -466,7 +625,7 @@
                 // Fallback warning if no events arrive (likely due to permissions or insecure origin)
                 setTimeout(() => {
                     if (!deviceMotionEventTriggered) {
-                        console.warn('Device motion events not detected. Ensure the page is served over HTTPS and motion permissions are granted.');
+                        logStatus('No device motion events detected yet. If you are opening the file directly, try using `chrome://flags/#sensor` (enable) or run a local server.', { highlight: true });
                     }
                 }, 2000);
             };
@@ -476,9 +635,15 @@
                     .then(permissionState => {
                         if (permissionState === 'granted') {
                             attachListener();
+                            logStatus('DeviceMotion permission granted.');
+                        } else {
+                            logStatus(`DeviceMotion permission state: ${permissionState}.`, { highlight: true });
                         }
                     })
-                    .catch(error => console.error('DeviceMotion permission denied:', error));
+                    .catch(error => {
+                        console.error('DeviceMotion permission denied:', error);
+                        logStatus('DeviceMotion permission request was denied.', { highlight: true });
+                    });
             } else {
                 attachListener();
             }
@@ -513,7 +678,10 @@
         }
 
         ['touchstart', 'click'].forEach(eventName => {
-            document.addEventListener(eventName, enableShakeDetection, { once: true, passive: true });
+            document.addEventListener(eventName, event => {
+                logStatus(`User interaction (${event.type}) detected. Attempting sensor access.`);
+                enableShakeDetection();
+            }, { once: true, passive: true });
         });
 
         // Enable shake detection when the page loads
