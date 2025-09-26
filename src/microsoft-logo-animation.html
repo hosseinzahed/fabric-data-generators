@@ -212,6 +212,26 @@
             }
         }
 
+        /* Shake hint animation */
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            20% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            80% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .logo-container {
@@ -339,12 +359,6 @@
             }
         });
 
-        // Add some initial loading animation
-        window.addEventListener('load', function() {
-            const logo = document.getElementById('microsoftLogo');
-            logo.style.animation = 'bounceBack 1s ease-out';
-        });
-
         // Easter egg: Double click for random color change
         let clickCount = 0;
         document.getElementById('microsoftLogo').addEventListener('click', function() {
@@ -373,6 +387,108 @@
                 pieces[3].style.backgroundColor = '#ffb900';
             }, 3000);
         }
+
+        // Shake detection for mobile devices
+        let shakeDetectionEnabled = false;
+        let lastAcceleration = { x: 0, y: 0, z: 0 };
+        let lastShakeTime = 0;
+        const SHAKE_THRESHOLD = 15; // Sensitivity threshold
+        const SHAKE_TIMEOUT = 1000; // Minimum time between shake detections
+
+        function detectShake(event) {
+            if (!shakeDetectionEnabled || isAnimating) return;
+            
+            const acceleration = event.accelerationIncludingGravity;
+            if (!acceleration) return;
+
+            const currentTime = Date.now();
+            if (currentTime - lastShakeTime < SHAKE_TIMEOUT) return;
+
+            // Calculate the change in acceleration
+            const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
+            const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
+            const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
+
+            // Check if shake threshold is exceeded
+            if (deltaX > SHAKE_THRESHOLD || deltaY > SHAKE_THRESHOLD || deltaZ > SHAKE_THRESHOLD) {
+                lastShakeTime = currentTime;
+                animateLogo();
+                
+                // Provide haptic feedback if available
+                if (navigator.vibrate) {
+                    navigator.vibrate(100);
+                }
+            }
+
+            lastAcceleration = {
+                x: acceleration.x,
+                y: acceleration.y,
+                z: acceleration.z
+            };
+        }
+
+        // Request permission and enable shake detection on mobile devices
+        function enableShakeDetection() {
+            // Check if we're on a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (!isMobile) return;
+
+            // For iOS 13+ devices, we need to request permission
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('devicemotion', detectShake);
+                            shakeDetectionEnabled = true;
+                            showShakeHint();
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // For Android and older iOS devices
+                window.addEventListener('devicemotion', detectShake);
+                shakeDetectionEnabled = true;
+                showShakeHint();
+            }
+        }
+
+        function showShakeHint() {
+            const hint = document.createElement('div');
+            hint.innerHTML = '📱 Shake your phone to animate!';
+            hint.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(255, 255, 255, 0.9);
+                color: #333;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-size: 14px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+                z-index: 1000;
+                animation: fadeInOut 4s ease-in-out;
+            `;
+            
+            document.body.appendChild(hint);
+            
+            // Remove hint after animation
+            setTimeout(() => {
+                if (hint.parentNode) {
+                    hint.parentNode.removeChild(hint);
+                }
+            }, 4000);
+        }
+
+        // Enable shake detection when the page loads
+        window.addEventListener('load', function() {
+            const logo = document.getElementById('microsoftLogo');
+            logo.style.animation = 'bounceBack 1s ease-out';
+            
+            // Enable shake detection after a short delay
+            setTimeout(enableShakeDetection, 1000);
+        });
     </script>
 </body>
 </html>
