@@ -400,31 +400,20 @@
         function detectShake(event) {
             if (!shakeDetectionEnabled || isAnimating) return;
             
-            // Try both accelerationIncludingGravity and acceleration for better compatibility
-            const acceleration = event.accelerationIncludingGravity || event.acceleration;
+            const acceleration = event.accelerationIncludingGravity;
             if (!acceleration) return;
 
             const currentTime = Date.now();
             if (currentTime - lastShakeTime < SHAKE_TIMEOUT) return;
 
-            // Handle null values that can occur on some Android devices
-            const x = acceleration.x || 0;
-            const y = acceleration.y || 0;
-            const z = acceleration.z || 0;
-
             // Calculate the change in acceleration
-            const deltaX = Math.abs(x - lastAcceleration.x);
-            const deltaY = Math.abs(y - lastAcceleration.y);
-            const deltaZ = Math.abs(z - lastAcceleration.z);
-
-            // Use a lower threshold for Android Chrome and calculate total movement
-            const totalDelta = deltaX + deltaY + deltaZ;
-            const threshold = /Chrome.*Android/i.test(navigator.userAgent) ? 12 : SHAKE_THRESHOLD;
+            const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
+            const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
+            const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
 
             // Check if shake threshold is exceeded
-            if (totalDelta > threshold || deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
+            if (deltaX > SHAKE_THRESHOLD || deltaY > SHAKE_THRESHOLD || deltaZ > SHAKE_THRESHOLD) {
                 lastShakeTime = currentTime;
-                console.log('Shake detected!', { deltaX, deltaY, deltaZ, totalDelta }); // Debug log
                 animateLogo();
                 
                 // Provide haptic feedback if available
@@ -433,7 +422,11 @@
                 }
             }
 
-            lastAcceleration = { x, y, z };
+            lastAcceleration = {
+                x: acceleration.x,
+                y: acceleration.y,
+                z: acceleration.z
+            };
         }
 
         // Request permission and enable shake detection on mobile devices
@@ -448,37 +441,17 @@
                 DeviceMotionEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
-                            window.addEventListener('devicemotion', detectShake, { passive: false });
+                            window.addEventListener('devicemotion', detectShake);
                             shakeDetectionEnabled = true;
                             showShakeHint();
                         }
                     })
                     .catch(console.error);
             } else {
-                // For Android and older iOS devices - try multiple approaches
-                try {
-                    // Method 1: Direct event listener
-                    window.addEventListener('devicemotion', detectShake, { passive: false });
-                    shakeDetectionEnabled = true;
-                    
-                    // Method 2: Test if devicemotion is actually working
-                    setTimeout(() => {
-                        if (shakeDetectionEnabled) {
-                            console.log('Shake detection enabled for Android Chrome');
-                            showShakeHint();
-                        }
-                    }, 500);
-                    
-                    // Method 3: Alternative approach for Chrome Android
-                    if (/Chrome.*Android/i.test(navigator.userAgent)) {
-                        // Also listen to deviceorientation as backup
-                        window.addEventListener('deviceorientation', function(event) {
-                            // This is a fallback - you can implement orientation-based detection here if needed
-                        }, { passive: false });
-                    }
-                } catch (error) {
-                    console.error('Failed to enable shake detection:', error);
-                }
+                // For Android and older iOS devices
+                window.addEventListener('devicemotion', detectShake);
+                shakeDetectionEnabled = true;
+                showShakeHint();
             }
         }
 
