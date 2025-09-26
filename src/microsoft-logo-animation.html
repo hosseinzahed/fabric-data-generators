@@ -340,7 +340,7 @@
         </div>
         
         <button class="animate-button" id="animateBtn" onclick="animateLogo('button')">
-            Split & Reunify
+            Go!
         </button>
     </div>
 
@@ -427,7 +427,7 @@
             logStatus(`Animation triggered via ${source}.`, { highlight: source === 'shake' });
 
             button.disabled = true;
-            button.textContent = 'Splitting...';
+            button.textContent = 'Wait...';
 
             pieces[0].style.setProperty('--split-transform', 'translate(-150px, -150px) rotate(360deg) scale(0.8)');
             pieces[1].style.setProperty('--split-transform', 'translate(150px, -150px) rotate(-360deg) scale(0.8)');
@@ -438,7 +438,7 @@
             logo.classList.add('split');
 
             setTimeout(() => {
-                button.textContent = 'Reunifying...';
+                button.textContent = 'Wait...';
                 logo.classList.remove('split');
                 logo.classList.add('reunify');
 
@@ -448,7 +448,7 @@
                     logo.classList.remove('reunify');
                     isAnimating = false;
                     button.disabled = false;
-                    button.textContent = 'Split & Reunify';
+                    button.textContent = 'Go!';
                     logStatus('Animation complete.');
                 }, 560);
             }, 500);
